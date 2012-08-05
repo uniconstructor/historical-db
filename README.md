@@ -15,7 +15,7 @@ creation of historical database records.  AR and DAO are both supported.
 
 ###Installation
 
-* TODO
+* TODO: Finish installation bullet points
 
 ###Features
 
@@ -33,9 +33,9 @@ bypassed.  Doing so will break the integrity of your slowly changing dimensions
 
 ###Usage
 
-* TODO
+* TODO: Finish usage bullet points
 
 License
 ---------
 Modified BSD License
-[https://github.com/gtcode/Yii-Phpass](https://github.com/gtcode/Yii-Phpass)
+[https://github.com/gtcode/historical-db](https://github.com/gtcode/historical-db)
