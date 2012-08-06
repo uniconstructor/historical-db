@@ -79,7 +79,7 @@ class HistoricalDbCommand extends CDbCommand
 		$ret = parent::update($table, $columns, $conditions, $params);
 		$this->skipHistoricalCommand = false;
 		$changedRows = $this->getChangedRowsForHistorical($table, $tbl->primaryKey, $primaryKeys);
-		$this->ogHistoricalUpdateRows($table, $changedRows, $transaction);
+		$this->logHistoricalUpdateRows($table, $changedRows, $transaction);
 		return $ret;
 	}
 	
