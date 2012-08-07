@@ -15,7 +15,8 @@ historical-db is a collection of components for [Yii](http://www.yiiframework.co
 
 ###Installation
 
-In main.php, you will need two main DB connections inside 'components':
+- Create a new separate historical DB to correspond to the dbHistorical component below.
+- Then, in main.php, you will need two main DB connections inside 'components':
 ```
 	'components'=>array(
 		// ...
@@ -39,7 +40,7 @@ In main.php, you will need two main DB connections inside 'components':
 		),
 	),
 ```
-Also in main.php, in 'params':
+- Also in main.php, in 'params':
 ```
 	'params'=>array(
 		// ...
