@@ -136,7 +136,7 @@ class HistoricalDbMigration extends CDbMigration
 			return;
 		}
 		$historicalTable = $this->getHistoricalTableName($table);
-		$historicalTableNew = $this->getHistoricalTableName($newName);
+		$historicalTableNew = $this->getHistoricalTableName($newName, false);
 		if ($historicalTable) {
 			$this->setDbToHistorical();
 			parent::renameTable($historicalTable, $historicalTableNew);
