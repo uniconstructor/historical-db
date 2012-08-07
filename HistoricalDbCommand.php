@@ -53,7 +53,7 @@ class HistoricalDbCommand extends CDbCommand
 	 */
 	public function update($table, $columns, $conditions='', $params=array()) {
 		if ($this->skipHistoricalCommand) {
-			return parent::update($table, $columns);
+			return parent::update($table, $columns, $conditions, $params);
 		}
 		$db = $this->getConnection();
 		$transaction = $db->beginTransaction();
