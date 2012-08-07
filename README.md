@@ -49,7 +49,7 @@ Also in main.php, in 'params':
 
 ###Features
 
-* historical-db provides most of what can be described as [Type 2 Slowly Changing Dimensions](http://en.wikipedia.org/wiki/Slowly_changing_dimension#Type_2).
+* historical-db provides most of what can be described as [Type 4 Slowly Changing Dimensions](http://en.wikipedia.org/wiki/Slowly_changing_dimension#Type_4).
 * Each record stores the user_id that performed the action, action (INSERT, UPDATE, DELETE), and time of creation.
 * Historical tables can be automatically created from your existing schema via subclass of CDbMigration.
 * Mechanism for creating and maintaining your historical tables are provided in CDbMigration subclass.
