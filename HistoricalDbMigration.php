@@ -12,7 +12,7 @@
  * @package   historical-db
  * @version   0.01a
  * @category  ext*
- * 
+ *
  * NOTE:  All constructs changing schema are transaction unsafe in MySQL.
  *        Thus, the transactions are mostly pointless, anyway.
  *
@@ -26,7 +26,7 @@ class HistoricalDbMigration extends CDbMigration
 	private $_originalDbConnection = null;
 
 	private $_transactions = null;
-	
+
 	public function createTable($table, $columns, $options=null, $skipHistorical=false) {
 		parent::createTable($table, $columns, $options);
 		if ($skipHistorical !== false || !$this->getDbConnection()->logHistorical) {
@@ -79,7 +79,7 @@ class HistoricalDbMigration extends CDbMigration
 		parent::createTable($historicalTable, $historicalColumns, $options);
 		$this->setDbToOriginal();
 	}
-	
+
 	public function createHistoricalTable($table) {
 		$historicalTable = $this->getHistoricalTableName($table, true, true);
 		if ($historicalTable === false) {
@@ -110,7 +110,7 @@ class HistoricalDbMigration extends CDbMigration
 		} else if (count($primaryKeys)==1) {
 			$pk = substr('h_' . $primaryKeys[0], 0, 64);
 		} else {
-			$pk = substr(implode('_',$primaryKeys), 0, 64);	
+			$pk = substr(implode('_',$primaryKeys), 0, 64);
 		}
 		$cols = CMap::mergeArray(
 			array($pk=>'pk'),
@@ -129,7 +129,7 @@ class HistoricalDbMigration extends CDbMigration
 		);
 		$this->setDbToOriginal();
 	}
-	
+
 	public function renameTable($table, $newName) {
 		parent::renameTable($table, $newName);
 		if (!$this->getDbConnection()->logHistorical) {
@@ -143,7 +143,7 @@ class HistoricalDbMigration extends CDbMigration
 			$this->setDbToOriginal();
 		}
 	}
-	
+
 	/**
 	 * By Default, the historical table will not be dropped!
 	 */
@@ -175,7 +175,7 @@ class HistoricalDbMigration extends CDbMigration
 			$type = strtolower($type);
 			if ($type === 'pk') {
 				$type = 'int(11) NOT NULL';
-			} else if ($type === 'int(11) not null auto_increment primary key first') {  // This is a special case that should not occur if we avoid composite FK's and avoid changing PK's after the fact.. 
+			} else if ($type === 'int(11) not null auto_increment primary key first') {  // This is a special case that should not occur if we avoid composite FK's and avoid changing PK's after the fact..
 				$parentCol = substr('h_' . $column, 0, 64);
 				parent::addColumn($historicalTable, $parentCol, 'INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST');
 				$type = 'INT(11) NOT NULL AFTER ' . $parentCol;
@@ -183,12 +183,12 @@ class HistoricalDbMigration extends CDbMigration
 				$type = 'TIMESTAMP NULL';
 			} else if (stripos($type, 'datetime') !== false) {
 				$type = 'DATETIME NULL';
-			} 			
+			}
 			parent::addColumn($historicalTable, $column, $type);
 			$this->setDbToOriginal();
 		}
 	}
-	
+
 	/**
 	 * TODO:  Add support for 'AFTER' and 'FIRST' in $type field.
 	 * TODO:  Add support for altering a primary key (this is not a common occurrence, and should not be needed).
@@ -205,7 +205,7 @@ class HistoricalDbMigration extends CDbMigration
 			$this->setDbToOriginal();
 		}
 	}
-	
+
 	public function renameColumn($table, $name, $newName) {
 		parent::renameColumn($table, $name, $newName);
 		if (!$this->getDbConnection()->logHistorical) {
@@ -218,7 +218,7 @@ class HistoricalDbMigration extends CDbMigration
 			$this->setDbToOriginal();
 		}
 	}
-	
+
 	/**
 	 * By Default, the historical column will not be dropped!
 	 */
@@ -234,19 +234,19 @@ class HistoricalDbMigration extends CDbMigration
 			$this->setDbToOriginal();
 		}
 	}
-	
+
 	/**
 	 * CAUTION - USE WITH CARE!  THIS IS NOT TO BE USED NORMALLY!
 	 */
 	public function dropColumnHistorical($table, $name) {
 		if (!$this->getDbConnection()->logHistorical) {
 			return;
-		}		
+		}
 		$this->setDbToHistorical();
 		parent::dropColumn($table, $name);
 		$this->setDbToOriginal();
 	}
-	
+
 	public function setDbToHistorical() {
 		echo '    > Switching to Historical DB Connection ...';
 		$time=microtime(true);
@@ -256,7 +256,7 @@ class HistoricalDbMigration extends CDbMigration
 		$this->setDbConnection($this->getHistoricalConnection());
 		echo " done (time: ".sprintf('%.3f', microtime(true)-$time)."s)\n";
 	}
-	
+
 	public function setDbToOriginal() {
 		echo '    > Switching to Original DB Connection. ...';
 		$time=microtime(true);
@@ -266,8 +266,7 @@ class HistoricalDbMigration extends CDbMigration
 		$this->setDbConnection($this->_originalDbConnection);
 		echo " done (time: ".sprintf('%.3f', microtime(true)-$time)."s)\n";
 	}
-	
-	
+
 	public function getHistoricalTableName($table, $confirm=true, $invert=false) {
 		if (substr($table,0,2) !== 'p_') {
 			throw new CException('During Migration, table did not prefix with "p_".  Chosen name was: ' . $table);
@@ -277,8 +276,8 @@ class HistoricalDbMigration extends CDbMigration
 		if ($confirm) {
 			$hasTable = $this->getHistoricalConnection()->createCommand("
 				SELECT COUNT(*)
-				FROM information_schema.tables 
-				WHERE table_schema = '" . $this->getDbName($dbHistorical) . "' 
+				FROM information_schema.tables
+				WHERE table_schema = '" . $this->getDbName($dbHistorical) . "'
 				AND table_name = '" . $db->cleanseTableName($historicalTableName) . "'
 				")->queryScalar();
 			if ( (!$invert && !$hasTable) || ($invert && $hasTable) ){
@@ -291,7 +290,7 @@ class HistoricalDbMigration extends CDbMigration
 	public function getHistoricalConnection() {
 		return Yii::app()->getComponent($this->historicalConnectionID);
 	}
-	
+
 	public function up() {
 		$this->startTransactions();
 		try {
@@ -323,24 +322,24 @@ class HistoricalDbMigration extends CDbMigration
 			return false;
 		}
 	}
-	
+
 	private function startTransactions() {
 		$this->_transactions = array(
 			'transaction' => $this->getDbConnection()->beginTransaction(),
 			'transactionHistorical' => $this->getHistoricalConnection()->beginTransaction(),
 		);
 	}
-	
+
 	private function commitTransactions() {
 		$this->_transactions['transaction']->commit();
 		$this->_transactions['transactionHistorical']->commit();
 	}
-	
+
 	private function rollBackTransactions() {
 		$this->_transactions['transaction']->rollBack();
 		$this->_transactions['transactionHistorical']->rollBack();
 	}
-	
+
 	/**
 	 * This will work with MySQL but probably not others, as connection string
 	 * format is not universal.  TODO:  Make more robust/generic.
@@ -349,7 +348,7 @@ class HistoricalDbMigration extends CDbMigration
 		if ($connection===null) {
 			$dbName = $this->getDbConnection()->connectionString;
 		} else {
-			$dbName = $connection->connectionString;	
+			$dbName = $connection->connectionString;
 		}
 		$dbLoc = stripos($dbName,'dbname=');
 		if ($dbLoc === false) {
@@ -357,5 +356,5 @@ class HistoricalDbMigration extends CDbMigration
 		}
 		return trim(substr($dbName,$dbLoc+7));
 	}
-	
+
 }
