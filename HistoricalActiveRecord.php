@@ -59,7 +59,7 @@ class HistoricalActiveRecord extends CActiveRecord
 	private function createHistoricalRow($action, $model) {
 		$table = $model->getMetaData()->tableSchema;
 		$historicalTableName = $this->getHistoricalTableName($table->name);
-		if ($historicalTableName===false) {
+		if ($historicalTableName === false) {
 			throw new CException('Historical class is applied to table without historical table.  Original table: ' . $table->name);
 		}
 		$data = $model->getAttributes();
@@ -74,7 +74,7 @@ class HistoricalActiveRecord extends CActiveRecord
 		$placeholders = array();
 		$i=0;
 		foreach ($data as $name=>$value) {
-			if (($column=$table->getColumn($name))!==null && ($value!==null || $column->allowNull)) {
+			if (($column=$table->getColumn($name)) !== null && ($value !== null || $column->allowNull)) {
 				$fields[] = $column->rawName;
 				if ($value instanceof CDbExpression) {
 					$placeholders[] = $value->expression;
@@ -88,7 +88,7 @@ class HistoricalActiveRecord extends CActiveRecord
 				}
 			}
 		}
-		if ($fields===array()) {
+		if ($fields === array()) {
 			$pks = is_array($table->primaryKey) ? $table->primaryKey : array($table->primaryKey);
 			foreach ($pks as $pk) {
 				$fields[] = $table->getColumn($pk)->rawName;
@@ -187,7 +187,7 @@ class HistoricalActiveRecord extends CActiveRecord
 	 * TODO: Make this much faster, as it is vastly inefficient.
 	 * We likely need a queueing system to handle historical record creation
 	 * of large sets of db records that are modified by a single statement.
-	 */		
+	 */
 	public function updateAll($attributes, $condition='', $params=array()) {
 		$models = $this->findAll($condition, $params);
 		$count = 0;
@@ -262,7 +262,7 @@ class HistoricalActiveRecord extends CActiveRecord
 
 	private function isCalledPrivately() {
 		$backtrace = debug_backtrace();
-		if (count($backtrace)<3) {
+		if (count($backtrace) < 3) {
 			return false;
 		}
 		if ($backtrace[2]['class'] !== 'CActiveRecord' && $backtrace[2]['class'] !== get_class($this)) {
