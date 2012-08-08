@@ -18,18 +18,18 @@
  */
 class HistoricalDbPDO extends PDO
 {
-    
+
     // Database drivers that support SAVEPOINTs.
     protected static $savepointTransactions = array("pgsql", "mysql");
- 
+
     // The current transaction level.
     protected $transLevel = 0;
- 
+
     protected function nestable() {
         return in_array($this->getAttribute(PDO::ATTR_DRIVER_NAME),
                         self::$savepointTransactions);
     }
- 
+
     public function beginTransaction() {
         if ($this->transLevel == 0 || !$this->nestable()) {
             parent::beginTransaction();
@@ -38,7 +38,7 @@ class HistoricalDbPDO extends PDO
         }
         $this->transLevel++;
     }
- 
+
     public function commit() {
         $this->transLevel--;
         if ($this->transLevel == 0 || !$this->nestable()) {
@@ -47,7 +47,7 @@ class HistoricalDbPDO extends PDO
             $this->exec("RELEASE SAVEPOINT LEVEL{$this->transLevel}");
         }
     }
- 
+
     public function rollBack() {
         $this->transLevel--;
         if ($this->transLevel == 0 || !$this->nestable()) {
@@ -56,5 +56,5 @@ class HistoricalDbPDO extends PDO
             $this->exec("ROLLBACK TO SAVEPOINT LEVEL{$this->transLevel}");
         }
     }
-    
+
 }
