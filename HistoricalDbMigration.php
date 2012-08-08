@@ -105,9 +105,9 @@ class HistoricalDbMigration extends CDbMigration
 					. ( ($column->defaultValue!==null) ? ' DEFAULT ' . $sep . $column->defaultValue . $sep : (($column->allowNull && $column->defaultValue===null) ? ' DEFAULT NULL' : ''));
 			}
 		}
-		if (count($primaryKeys)==0) {
+		if (count($primaryKeys) == 0) {
 			throw new CException('No primary keys found, not currently supported!');
-		} else if (count($primaryKeys)==1) {
+		} else if (count($primaryKeys) == 1) {
 			$pk = substr('h_' . $primaryKeys[0], 0, 64);
 		} else {
 			$pk = substr(implode('_',$primaryKeys), 0, 64);
@@ -280,7 +280,7 @@ class HistoricalDbMigration extends CDbMigration
 				WHERE table_schema = '" . $this->getDbName($dbHistorical) . "'
 				AND table_name = '" . $db->cleanseTableName($historicalTableName) . "'
 				")->queryScalar();
-			if ( (!$invert && !$hasTable) || ($invert && $hasTable) ){
+			if ((!$invert && !$hasTable) || ($invert && $hasTable)){
 				return false;
 			}
 		}
@@ -294,14 +294,14 @@ class HistoricalDbMigration extends CDbMigration
 	public function up() {
 		$this->startTransactions();
 		try {
-			if($this->safeUp()===false) {
+			if ($this->safeUp() === false) {
 				$this->rollBackTransactions();
 				return false;
 			}
 			$this->commitTransactions();
-		} catch(Exception $e) {
-			echo "Exception: ".$e->getMessage().' ('.$e->getFile().':'.$e->getLine().")\n";
-			echo $e->getTraceAsString()."\n";
+		} catch (Exception $e) {
+			echo "Exception: " . $e->getMessage() . ' (' . $e->getFile() . ':' . $e->getLine() . ")\n";
+			echo $e->getTraceAsString() . "\n";
 			$this->rollBackTransactions();
 			return false;
 		}
@@ -310,14 +310,14 @@ class HistoricalDbMigration extends CDbMigration
 	public function down() {
 		$this->startTransactions();
 		try {
-			if($this->safeDown()===false) {
+			if ($this->safeDown() === false) {
 				$this->rollBackTransactions();
 				return false;
 			}
 			$this->commitTransactions();
-		} catch(Exception $e) {
-			echo "Exception: ".$e->getMessage().' ('.$e->getFile().':'.$e->getLine().")\n";
-			echo $e->getTraceAsString()."\n";
+		} catch (Exception $e) {
+			echo "Exception: " . $e->getMessage() . ' (' . $e->getFile() . ':' . $e->getLine() . ")\n";
+			echo $e->getTraceAsString() . "\n";
 			$this->rollBackTransactions();
 			return false;
 		}
@@ -345,16 +345,16 @@ class HistoricalDbMigration extends CDbMigration
 	 * format is not universal.  TODO:  Make more robust/generic.
 	 */
 	public function getDbName($connection=null) {
-		if ($connection===null) {
+		if ($connection === null) {
 			$dbName = $this->getDbConnection()->connectionString;
 		} else {
 			$dbName = $connection->connectionString;
 		}
-		$dbLoc = stripos($dbName,'dbname=');
+		$dbLoc = stripos($dbName, 'dbname=');
 		if ($dbLoc === false) {
 			throw new CException('Cannot find DB Name, connection string: ' . $dbName);
 		}
-		return trim(substr($dbName,$dbLoc+7));
+		return trim(substr($dbName, $dbLoc+7));
 	}
 
 }
