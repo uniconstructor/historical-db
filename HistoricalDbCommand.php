@@ -12,7 +12,7 @@
  * @package   historical-db
  * @version   0.01a
  * @category  ext*
- * 
+ *
  * Instead of CDbCommand::execute(), use the named variations in this method.
  *
  * CDbCommand::insert(), CDbCommand::update(), and CDbCommand::delete() support
@@ -21,17 +21,17 @@
  */
 class HistoricalDbCommand extends CDbCommand
 {
-	
+
 	/**
 	 * Name of the Historical DB Connection
 	 */
 	public $historicalConnectionID = 'dbHistorical';
-	
+
 	/**
 	 * Whether to skip historical record creation
 	 */
 	public $skipHistoricalCommand = false;
-	
+
 	/**
 	 * Insert into intended table, then create historical INSERT record.
 	 */
@@ -47,7 +47,7 @@ class HistoricalDbCommand extends CDbCommand
 		$this->logHistoricalInsert($db, $table, $transaction);
 		return $ret;
 	}
-	
+
 	/**
 	 * Update intended record, then create historical UPDATE record.
 	 */
@@ -64,7 +64,7 @@ class HistoricalDbCommand extends CDbCommand
 						'{class}'=>get_class($model),
 						'{table}'=>$table,
 				))
-			); 
+			);
 		}
 		$q = "
 			SELECT `" . $tbl->primaryKey . "`
@@ -82,10 +82,10 @@ class HistoricalDbCommand extends CDbCommand
 		$this->logHistoricalUpdateRows($table, $changedRows, $transaction);
 		return $ret;
 	}
-	
+
 	/**
 	 * Create historical delete record, then hard DELETE original record.
-	 */	
+	 */
 	public function delete($table, $conditions='', $params=array()) {
 		if ($this->skipHistoricalCommand) {
 			return parent::delete($table, $conditions, $params);
@@ -113,7 +113,7 @@ class HistoricalDbCommand extends CDbCommand
 			throw new CException('Error during transaction, message: ' . $e->getMessage());
 		}
 	}
-	
+
 	/**
 	 * Use this in place of execute for INSERT statements.
 	 * It will both execute the INSERT, and log the historical record.
@@ -133,7 +133,7 @@ class HistoricalDbCommand extends CDbCommand
 			throw new CException('Error during transaction, message: ' . $e->getMessage());
 		}
 	}
-	
+
 	/**
 	 * Use this in place of execute for UPDATE statements.
 	 * It will both execute the UPDATE, and log the historical record.
@@ -154,15 +154,15 @@ class HistoricalDbCommand extends CDbCommand
 			throw new CException('Error during transaction, message: ' . $e->getMessage());
 		}
 	}
-	
+
 	/**
 	 * Use this in place of execute for DELETE statements.
 	 * It will both (first) log the historical delete, then execute the hard DELETE.
 	 *
 	 * TODO:  Move call to $this->execute() into logHistoricalDelete, along with transaction, so we can commit it right after deleting, but before performing the actual historical logging.
-	 * 
+	 *
 	 * See HistoricalDbCommand::getChangedRowsForHistorical() for explanation of parameters.
-	 * 
+	 *
 	 * @param string $table
 	 * @param mixed $keys
 	 * @param mixed $values
@@ -176,15 +176,15 @@ class HistoricalDbCommand extends CDbCommand
 		$transaction = $db->beginTransaction();
 		try {
 			$this->logHistoricalDelete($table, $keys, $values);
-			$ret = $this->execute();  
+			$ret = $this->execute();
 			$transaction->commit();
 			return $ret;
 		} catch (Exception $e) {
 			$transaction->rollback();
 			throw new CException('Error during transaction, message: ' . $e->getMessage());
 		}
-	}	
-	
+	}
+
 	/**
 	 * Creates a historical update for given pk/values.  Original update not performed.
 	 * See HistoricalDbCommand::getChangedRowsForHistorical() for explanation of parameters.
@@ -201,7 +201,7 @@ class HistoricalDbCommand extends CDbCommand
 		$db = $this->getConnection();
 		$this->logHistoricalUpdate($table, $keys, $values, $transaction);
 	}
-	
+
 	/**
 	 * Logs the state of a record to the historical table before deletion.  Original delete not performed.
 	 * See HistoricalDbCommand::getChangedRowsForHistorical() for explanation of parameters.
@@ -215,13 +215,13 @@ class HistoricalDbCommand extends CDbCommand
 		}
 		$this->logHistoricalDelete($table, $keys, $values);
 	}
-	
+
 	/**
 	 * Logs an INSERT ON DUP KEY UPDATE statement, and creates the appropriate historical entry.
-	 * 
+	 *
 	 * Expects either 0 or 1 rows to exist with the unique key, thus this should be
 	 * enforced via unique index in the source table.
-	 * 
+	 *
 	 * @param string $table
 	 * @param mixed $keys
 	 * @param mixed $values
@@ -237,7 +237,7 @@ class HistoricalDbCommand extends CDbCommand
 		try {
 			$changedRows = $this->getChangedRowsForHistorical($table, $keys, $values);
 			if (count($changedRows)==0) { // insert
-				$ret = $this->execute();	
+				$ret = $this->execute();
 				$this->logHistoricalInsert($db, $table, $transaction);
 			} else if (count($changedRows)==1) { // duplicate key, update
 				$tbl = $db->getSchema()->getTable($table);
@@ -247,8 +247,8 @@ class HistoricalDbCommand extends CDbCommand
 								'{class}'=>get_class($model),
 								'{table}'=>$table,
 						))
-					); 
-				}			
+					);
+				}
 				$ret = $this->execute();
 				if (!isset($changedRows[0][$tbl->primaryKey])) {
 					throw new CDbException('Could not find pk for insert on historical update, table: ' . $table . ', primaryKey: ' . $tbl->primaryKey . ', values: ' . print_r($changedRows,true));
@@ -269,11 +269,11 @@ class HistoricalDbCommand extends CDbCommand
 			throw new CException('Error during transaction, message: ' . $e->getMessage());
 		}
 	}
-	
+
 	/**
 	 * An insert should always generate a last insert id, and we use non-composite PK's only.
 	 * Thus, this one method should be sufficient to cover historical logging of all PDO inserts.
-	 * 
+	 *
 	 * @param CDbConnection $db The connection object used to insert the record originally.
 	 * @param string $table The name of the table where the insert was performed
 	 * @param CDbTransaction $transaction The started transaction
@@ -286,19 +286,19 @@ class HistoricalDbCommand extends CDbCommand
 						'{class}'=>get_class($model),
 						'{table}'=>$table,
 				))
-			); 
+			);
 		}
 		$this->logHistoricalCommand($table, $tbl->primaryKey, $db->getLastInsertId(), 'INSERT', $transaction);
 	}
-	
+
 	private function logHistoricalUpdate($table, $keys, $values, $transaction) {
 		$this->logHistoricalCommand($table, $keys, $values, 'UPDATE', $transaction);
 	}
-	
+
 	private function logHistoricalDelete($table, $keys, $values) {
 		$this->logHistoricalCommand($table, $keys, $values, 'DELETE');
 	}
-	
+
 	private function logHistoricalCommand($table, $keys, $values, $action, $transaction=null) {
 		$changedRows = $this->getChangedRowsForHistorical($table, $keys, $values);
 		$this->logHistoricalRows($table, $action, $changedRows, $transaction);
@@ -307,53 +307,53 @@ class HistoricalDbCommand extends CDbCommand
 	private function logHistoricalUpdateRows($table, $changedRows, $transaction) {
 		$this->logHistoricalRows($table, 'UPDATE', $changedRows, $transaction);
 	}
-	
+
 	private function logHistoricalDeleteRows($table, $changedRows) {
 		$this->logHistoricalRows($table, 'DELETE', $changedRows);
 	}
-	
+
 	private function logHistoricalRows($table, $action, $changedRows, $transaction=null) {
 		if ($transaction instanceof CDbTransaction) {
-			$transaction->commit();	
+			$transaction->commit();
 		}
 		foreach ($changedRows as $changedRow) {
 			$this->insertHistorical($table, $changedRow, $action);
 		}
 	}
-	
+
 	private function insertHistorical($table, $columns, $action) {
 		if (substr($table,0,2) === 'p_') {
 			$dbHistorical = $this->getHistoricalConnection();
-			$params=array(); 
-			$names=array(); 
-			$placeholders=array(); 
-			foreach($columns as $name=>$value) { 
-				$names[]=$dbHistorical->quoteColumnName($name); 
-				if($value instanceof CDbExpression) { 
-					$placeholders[] = $value->expression; 
+			$params=array();
+			$names=array();
+			$placeholders=array();
+			foreach($columns as $name=>$value) {
+				$names[]=$dbHistorical->quoteColumnName($name);
+				if($value instanceof CDbExpression) {
+					$placeholders[] = $value->expression;
 					foreach($value->params as $n => $v) {
-						$params[$n] = $v; 
+						$params[$n] = $v;
 					}
-				} else { 
-					$placeholders[] = ':' . $name; 
-					$params[':' . $name] = $value; 
-				} 
-			} 
-			$sql='INSERT INTO ' . $dbHistorical->quoteTableName(Yii::app()->params['historicalDbPrefix'] . substr($table,1)) 
+				} else {
+					$placeholders[] = ':' . $name;
+					$params[':' . $name] = $value;
+				}
+			}
+			$sql='INSERT INTO ' . $dbHistorical->quoteTableName(Yii::app()->params['historicalDbPrefix'] . substr($table,1))
 				. ' (' . implode(',', $names) . ',
 					historical_user_id,
 					historical_action
-					) VALUES (' 
+					) VALUES ('
 				. implode(',', $placeholders) . ',
 					:historical_user_id,
-					:historical_action			
+					:historical_action
 				)';
 			$params[':historical_user_id'] = Yii::app()->user->id;
 			$params[':historical_action'] = $action;
 			$dbHistorical->createCommand($sql)->execute($params);
 		}
-	}	
-	
+	}
+
 	/**
 	 * Only works with integer keys for IN condition at this time, parameter binding large arrays could be too expensive.
 	 * TODO: Clean this mess up
@@ -368,7 +368,7 @@ class HistoricalDbCommand extends CDbCommand
 		$q = "
 			SELECT *
 			FROM " . $db->quoteTableName($table) . "
-			WHERE 
+			WHERE
 		";
 		$params = array();
 		if (!is_array($keys)) {
@@ -417,21 +417,21 @@ class HistoricalDbCommand extends CDbCommand
 						}
 					}
 					$q .= ' IN (' . implode(',', $db->cleanseArrayInts($values[$key])) . ") ";
-				}				
+				}
 				$sep = ' AND';
 			}
 		} else {
 			throw new CException('Improper format.  Please check your syntax.');
 		}
-		$command = $db->createCommand($q); 
+		$command = $db->createCommand($q);
 		foreach ($params as $key=>$value) {
 			$command->bindValue($key, $value);
 		}
 		return $command->queryAll();
 	}
-	
+
 	private function getHistoricalConnection() {
 		return Yii::app()->getComponent($this->historicalConnectionID);
 	}
-	
+
 }
