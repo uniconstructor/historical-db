@@ -71,7 +71,7 @@ class HistoricalDbCommand extends CDbCommand
 			FROM " . $db->quoteTableName($table) . "
 		";
 		$primaryKeys = $db->createCommand($q)->where($conditions, $params)->queryColumn();
-		if (count($primaryKeys)==0) {
+		if (count($primaryKeys) == 0) {
 			$transaction->commit();
 			return 0;
 		}
@@ -98,7 +98,7 @@ class HistoricalDbCommand extends CDbCommand
 				FROM " . $db->quoteTableName($table) . "
 			";
 			$changedRows = $db->createCommand($q)->where($conditions, $params)->queryAll();
-			if (count($changedRows)==0) {
+			if (count($changedRows) == 0) {
 				$transaction->commit();
 				return 0;
 			}
@@ -236,10 +236,10 @@ class HistoricalDbCommand extends CDbCommand
 		$transaction = $db->beginTransaction();
 		try {
 			$changedRows = $this->getChangedRowsForHistorical($table, $keys, $values);
-			if (count($changedRows)==0) { // insert
+			if (count($changedRows) == 0) { // insert
 				$ret = $this->execute();
 				$this->logHistoricalInsert($db, $table, $transaction);
-			} else if (count($changedRows)==1) { // duplicate key, update
+			} else if (count($changedRows) == 1) { // duplicate key, update
 				$tbl = $db->getSchema()->getTable($table);
 				if ($tbl === null) {
 					throw new CDbException(
