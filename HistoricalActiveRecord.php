@@ -12,7 +12,7 @@
  * @package   historical-db
  * @version   0.01a
  * @category  ext*
- * 
+ *
  * This class is used to automatically archive all incremental changes to a log
  * table with the same name as the base table, but starting with z_ instead.
  * The class HistoricalDbMigration handles automatic creation and maintenance of
@@ -21,15 +21,15 @@
  * In short, we must use HistoricalActiveRecord or HistoricalDbCommand, but
  * never modify the database directly.  Failing to adhere to this will cause a
  * break in integrity of record history.
- * 
+ *
  */
 class HistoricalActiveRecord extends CActiveRecord
 {
-	
+
 	public $historicalConnectionID = 'dbHistorical';
-	
+
 	const PARAM_PREFIX=':yp';
-	
+
 	public function afterSave() {
 		if ($this->isNewRecord) {
 			$this->insertHistorical();
@@ -38,38 +38,25 @@ class HistoricalActiveRecord extends CActiveRecord
 		}
 		return parent::afterSave();
 	}
-	
+
 	public function beforeDelete() {
 		$this->deleteHistorical();
-		$restrictedModels = $this->restrictedModels();
-		if (is_array($restrictedModels) && count($restrictedModels)>0) {
-			$primaryKeyName = $this->getMetaData()->tableSchema->primaryKey;
-			if (!is_string($primaryKeyName)) {
-				throw new CException('We do not use Composite FK relations.  This should not occur.');
-			}
-			foreach ($restrictedModels as $key => $model) {
-				$keyName = !is_numeric($key) ? $key : $primaryKeyName;
-				$model::model()->resetScope()->deleteAllByAttributes(array(
-					$keyName => $this->primaryKey,
-				));
-			}
-		}
 		return parent::beforeDelete();
 	}
-	
+
 	public function insertHistorical() {
 		$this->createHistoricalRow('INSERT', $this);
 	}
-	
+
 	public function updateHistorical() {
 		$this->createHistoricalRow('UPDATE', $this);
 	}
-	
+
 	public function deleteHistorical() {
 		$this->createHistoricalRow('DELETE', $this);
-	}	
-	
-	private function createHistoricalRow($action, $model) {	
+	}
+
+	private function createHistoricalRow($action, $model) {
 		$table = $model->getMetaData()->tableSchema;
 		$historicalTableName = $this->getHistoricalTableName($table->name);
 		if ($historicalTableName===false) {
@@ -82,30 +69,30 @@ class HistoricalActiveRecord extends CActiveRecord
 		} else {
 			$primaryKey = substr('h_' . $primaryKey, 0, 64);
 		}
-		$fields=array();
-		$values=array();
-		$placeholders=array();		
+		$fields = array();
+		$values = array();
+		$placeholders = array();
 		$i=0;
-		foreach($data as $name=>$value) {
-			if(($column=$table->getColumn($name))!==null && ($value!==null || $column->allowNull)) {
-				$fields[]=$column->rawName;
-				if($value instanceof CDbExpression) {
-					$placeholders[]=$value->expression;
-					foreach($value->params as $n=>$v) {
-						$values[$n]=$v;
+		foreach ($data as $name=>$value) {
+			if (($column=$table->getColumn($name))!==null && ($value!==null || $column->allowNull)) {
+				$fields[] = $column->rawName;
+				if ($value instanceof CDbExpression) {
+					$placeholders[] = $value->expression;
+					foreach ($value->params as $n=>$v) {
+						$values[$n] = $v;
 					}
 				} else {
-					$placeholders[]=self::PARAM_PREFIX.$i;
-					$values[self::PARAM_PREFIX.$i]=$column->typecast($value);
+					$placeholders[] = self::PARAM_PREFIX.$i;
+					$values[self::PARAM_PREFIX.$i] = $column->typecast($value);
 					$i++;
 				}
 			}
 		}
-		if($fields===array()) {
-			$pks=is_array($table->primaryKey) ? $table->primaryKey : array($table->primaryKey);
-			foreach($pks as $pk) {
-				$fields[]=$table->getColumn($pk)->rawName;
-				$placeholders[]='NULL';
+		if ($fields===array()) {
+			$pks = is_array($table->primaryKey) ? $table->primaryKey : array($table->primaryKey);
+			foreach ($pks as $pk) {
+				$fields[] = $table->getColumn($pk)->rawName;
+				$placeholders[] = 'NULL';
 			}
 		}
 		$dbHistorical = $this->getHistoricalConnection();
@@ -120,10 +107,10 @@ class HistoricalActiveRecord extends CActiveRecord
 				" .implode(', ', $placeholders) . ',
 				:historical_user_id,
 				:historical_action
-			)';	
+			)';
 		$command = $dbHistorical->createCommand($q);
-		foreach($values as $name=>$value) {
-			$command->bindValue($name,$value);		
+		foreach ($values as $name=>$value) {
+			$command->bindValue($name,$value);
 		}
 		$command->bindValue(':historical_user_id', Yii::app()->user->id);
 		$command->bindValue(':historical_action', $action);
@@ -135,7 +122,7 @@ class HistoricalActiveRecord extends CActiveRecord
 		$dbHistorical = $this->getHistoricalConnection();
 		if ($confirm && !$dbHistorical->createCommand("
 				SELECT COUNT(*)
-				FROM information_schema.tables 
+				FROM information_schema.tables
 				WHERE table_schema = '" . $this->getDbName($this->historicalConnectionID) . "' 
 				AND table_name = '" . $dbHistorical->cleanseTableName($historicalName) . "'
 			")->queryScalar()) {
@@ -143,7 +130,7 @@ class HistoricalActiveRecord extends CActiveRecord
 		}
 		return $historicalName;
 	}
-	
+
 	public function getDbName($dbComponent='db') {
 		$dbName = Yii::app()->getComponent($dbComponent)->connectionString;
 		$dbLoc = stripos($dbName,'dbname=');
@@ -152,22 +139,22 @@ class HistoricalActiveRecord extends CActiveRecord
 		}
 		return trim(substr($dbName,$dbLoc+7));
 	}
-	
+
 	public function getHistoricalConnection() {
 		return Yii::app()->getComponent($this->historicalConnectionID);
 	}
-	
+
 	/**
 	 * Override this function and return an array of Models that should
 	 * be deleted prior to $this.  If the key name is different than the primary
 	 * key of the related model, express this as $keyName=>$modelName.
-	 * 
+	 *
 	 * @return array Restricted Models to be deleted before $this one.
 	 */
 	public function restrictedModels() {
 		return array();
 	}
-	
+
 	/**
 	 * TODO: Make this much faster, as it is vastly inefficient.
 	 * We likely need a queueing system to handle historical record creation
@@ -181,12 +168,12 @@ class HistoricalActiveRecord extends CActiveRecord
 		}
 		return $count;
 	}
-	
+
 	/**
 	 * TODO: Make this much faster, as it is vastly inefficient.
 	 * We likely need a queueing system to handle historical record creation
 	 * of large sets of db records that are modified by a single statement.
-	 */	
+	 */
 	public function deleteAllByAttributes($attributes, $condition='', $params=array()) {
 		$models = $this->findAllByAttributes($attributes, $condition, $params);
 		$count = 0;
@@ -237,7 +224,7 @@ class HistoricalActiveRecord extends CActiveRecord
 		}
 		return parent::deleteByPk($pk, $condition, $params);
 	}
-	
+
 	/**
 	 * This function is used internally by CActiveRecord.  In this case
 	 * we do not want to disturb the normal functionality as the calling method
@@ -260,19 +247,19 @@ class HistoricalActiveRecord extends CActiveRecord
 		}
 		return parent::updateByPk($pk, $attributes, $condition, $params);
 	}
-	
+
 	public function saveCounters($counters) {
 		throw new CException('Method deactivated'); // TODO: Integrate historical record creation before re-activating.
 	}
-	
+
 	public function updateCounters($counters, $condition='', $params=array()) {
 		throw new CException('Method deactivated'); // TODO: Integrate historical record creation before re-activating.
 	}
-	
+
 	public function saveAttributes($array) {
 		throw new CException('Method deactivated'); // TODO: Integrate historical record creation before re-activating.
 	}
-	
+
 	private function isCalledPrivately() {
 		$backtrace = debug_backtrace();
 		if (count($backtrace)<3) {
@@ -282,19 +269,6 @@ class HistoricalActiveRecord extends CActiveRecord
 			return false;
 		}
 		return true;
-	}
-	
-	public function getRestrictedModelsTree(&$populated=array()) {
-		$tree = array();
-		$models = $this->restrictedModels();
-		foreach ($models as $id=>$model) {
-			if (array_key_exists($model, $populated)) {
-				continue;
-			}
-			$populated[$model] = true;
-			$tree[$model] = $model::model()->getRestrictedModelsTree($populated);
-		}
-		return $tree;
 	}
 
 }
