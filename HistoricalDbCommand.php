@@ -364,7 +364,7 @@ class HistoricalDbCommand extends CDbCommand
 	 * @return array results of queryAll()
 	 */
 	private function getChangedRowsForHistorical($table, $keys, $values) {
-		$db = Yii::app()->db;  // TODO: clean up
+		$db = $this->getConnection();
 		$q = "
 			SELECT *
 			FROM " . $db->quoteTableName($table) . "
