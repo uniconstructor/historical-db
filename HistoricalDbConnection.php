@@ -21,11 +21,11 @@ class HistoricalDbConnection extends CDbConnection
 	
 	public function createCommand($query=null) {
 		$this->setActive(true);
-		if ($this->logHistorical) {
-			return new HistoricalDbCommand($this, $query);		
-		} else {
-			return new CDbCommand($this, $query);
+		$command = new HistoricalDbCommand($this, $query);
+		if (!$this->logHistorical) {
+			$command->skipHistoricalCommand = true;
 		}
+		return $command;
 	}
 	
 	public function cleanseTableName($table) {
