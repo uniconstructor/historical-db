@@ -10,7 +10,7 @@
  * @author    GTCode
  * @link      http://www.GTCode.com/
  * @package   historical-db
- * @version   0.01a
+ * @version   0.01b
  * @category  ext*
  *
  * This class is used to automatically archive all incremental changes to a log
@@ -204,23 +204,13 @@ class HistoricalActiveRecord extends CActiveRecord
 	 * record.  However, if we use this externally (i.e. our app), we need to
 	 * trigger the historical record creation.
 	 *
-	 * TODO: Pass in callback for parent::deleteByPk, so we can commit the
-	 *       transaction directly after we have deleted the record, but before
-	 *       logging to the historical table; this will be a bit more efficient.
 	 */
 	public function deleteByPk($pk, $condition='', $params=array()) {
 		if (!$this->isCalledPrivately()) {  // We need to add a historical log entry
-			try {
-				$transaction = $this->getDbConnection()->beginTransaction();
-				$table = $this->getMetaData()->tableSchema;
-				$this->getDbConnection()->createCommand()->createHistoricalDelete($table->name, $table->primaryKey, $pk);
-				$ret = parent::deleteByPk($pk, $attributes, $condition, $params);
-				$transaction->commit();
-				return $ret;
-			} catch (Exception $e) {
-				$transaction->rollback();
-				throw new CException('Error during transaction, message: ' . $e->getMessage());
-			}
+			$table = $this->getMetaData()->tableSchema;
+			$this->getDbConnection()->createCommand()->createHistoricalDelete($table->name, $table->primaryKey, $pk);
+			$ret = parent::deleteByPk($pk, $attributes, $condition, $params);
+			return $ret;
 		}
 		return parent::deleteByPk($pk, $condition, $params);
 	}
@@ -234,16 +224,10 @@ class HistoricalActiveRecord extends CActiveRecord
 	 */
 	public function updateByPk($pk, $attributes, $condition='', $params=array()) {
 		if (!$this->isCalledPrivately()) {  // We need to add a historical log entry
-			try {
-				$transaction = $this->getDbConnection()->beginTransaction();
-				$ret = parent::updateByPk($pk, $attributes, $condition, $params);
-				$table = $this->getMetaData()->tableSchema;
-				$this->getDbConnection()->createCommand()->createHistoricalUpdate($table->name, $table->primaryKey, $pk, $transaction);
-				return $ret;
-			} catch (Exception $e) {
-				$transaction->rollback();
-				throw new CException('Error during transaction, message: ' . $e->getMessage());
-			}
+			$ret = parent::updateByPk($pk, $attributes, $condition, $params);
+			$table = $this->getMetaData()->tableSchema;
+			$this->getDbConnection()->createCommand()->createHistoricalUpdate($table->name, $table->primaryKey, $pk);
+			return $ret;
 		}
 		return parent::updateByPk($pk, $attributes, $condition, $params);
 	}

@@ -10,7 +10,7 @@
  * @author    GTCode
  * @link      http://www.GTCode.com/
  * @package   historical-db
- * @version   0.01a
+ * @version   0.01b
  * @category  ext*
  *
  * Instead of CDbCommand::execute(), use the named variations in this method.
@@ -40,11 +40,10 @@ class HistoricalDbCommand extends CDbCommand
 			return parent::insert($table, $columns);
 		}
 		$db = $this->getConnection();
-		$transaction = $db->beginTransaction();
 		$this->skipHistoricalCommand = true;
 		$ret = parent::insert($table, $columns);
 		$this->skipHistoricalCommand = false;
-		$this->logHistoricalInsert($db, $table, $transaction);
+		$this->logHistoricalInsert($db, $table);
 		return $ret;
 	}
 
@@ -56,7 +55,6 @@ class HistoricalDbCommand extends CDbCommand
 			return parent::update($table, $columns, $conditions, $params);
 		}
 		$db = $this->getConnection();
-		$transaction = $db->beginTransaction();
 		$tbl = $db->getSchema()->getTable($table);
 		if ($tbl === null) {
 			throw new CDbException(
@@ -72,14 +70,13 @@ class HistoricalDbCommand extends CDbCommand
 		";
 		$primaryKeys = $db->createCommand($q)->where($conditions, $params)->queryColumn();
 		if (count($primaryKeys) == 0) {
-			$transaction->commit();
 			return 0;
 		}
 		$this->skipHistoricalCommand = true;
 		$ret = parent::update($table, $columns, $conditions, $params);
 		$this->skipHistoricalCommand = false;
 		$changedRows = $this->getChangedRowsForHistorical($table, $tbl->primaryKey, $primaryKeys);
-		$this->logHistoricalUpdateRows($table, $changedRows, $transaction);
+		$this->logHistoricalUpdateRows($table, $changedRows);
 		return $ret;
 	}
 
@@ -91,27 +88,19 @@ class HistoricalDbCommand extends CDbCommand
 			return parent::delete($table, $conditions, $params);
 		}
 		$db = $this->getConnection();
-		$transaction = $db->beginTransaction();
-		try {
-			$q = "
-				SELECT *
-				FROM " . $db->quoteTableName($table) . "
-			";
-			$changedRows = $db->createCommand($q)->where($conditions, $params)->queryAll();
-			if (count($changedRows) == 0) {
-				$transaction->commit();
-				return 0;
-			}
-			$this->logHistoricalDeleteRows($table, $changedRows);
-			$this->skipHistoricalCommand = true;
-			$ret = parent::delete($table, $conditions, $params);
-			$transaction->commit();
-			$this->skipHistoricalCommand = false;
-			return $ret;
-		} catch (Exception $e) {
-			$transaction->rollback();
-			throw new CException('Error during transaction, message: ' . $e->getMessage());
+		$q = "
+			SELECT *
+			FROM " . $db->quoteTableName($table) . "
+		";
+		$changedRows = $db->createCommand($q)->where($conditions, $params)->queryAll();
+		if (count($changedRows) == 0) {
+			return 0;
 		}
+		$this->logHistoricalDeleteRows($table, $changedRows);
+		$this->skipHistoricalCommand = true;
+		$ret = parent::delete($table, $conditions, $params);
+		$this->skipHistoricalCommand = false;
+		return $ret;
 	}
 
 	/**
@@ -123,15 +112,9 @@ class HistoricalDbCommand extends CDbCommand
 			return $this->execute();
 		}
 		$db = $this->getConnection();
-		$transaction = $db->beginTransaction();
-		try {
-			$ret = $this->execute();
-			$this->logHistoricalInsert($db, $table, $transaction);
-			return $ret;
-		} catch (Exception $e) {
-			$transaction->rollback();
-			throw new CException('Error during transaction, message: ' . $e->getMessage());
-		}
+		$ret = $this->execute();
+		$this->logHistoricalInsert($db, $table);
+		return $ret;
 	}
 
 	/**
@@ -144,22 +127,16 @@ class HistoricalDbCommand extends CDbCommand
 			return $this->execute();
 		}
 		$db = $this->getConnection();
-		$transaction = $db->beginTransaction();
-		try {
-			$ret = $this->execute();
-			$this->logHistoricalUpdate($table, $keys, $values, $transaction);
-			return $ret;
-		} catch (Exception $e) {
-			$transaction->rollback();
-			throw new CException('Error during transaction, message: ' . $e->getMessage());
-		}
+		$ret = $this->execute();
+		$this->logHistoricalUpdate($table, $keys, $values);
+		return $ret;
 	}
 
 	/**
 	 * Use this in place of execute for DELETE statements.
 	 * It will both (first) log the historical delete, then execute the hard DELETE.
 	 *
-	 * TODO:  Move call to $this->execute() into logHistoricalDelete, along with transaction, so we can commit it right after deleting, but before performing the actual historical logging.
+	 * TODO:  Move call to $this->execute() into logHistoricalDelete, so we can commit it right after deleting, but before performing the actual historical logging.
 	 *
 	 * See HistoricalDbCommand::getChangedRowsForHistorical() for explanation of parameters.
 	 *
@@ -173,16 +150,9 @@ class HistoricalDbCommand extends CDbCommand
 			return $this->execute();
 		}
 		$db = $this->getConnection();
-		$transaction = $db->beginTransaction();
-		try {
 			$this->logHistoricalDelete($table, $keys, $values);
 			$ret = $this->execute();
-			$transaction->commit();
 			return $ret;
-		} catch (Exception $e) {
-			$transaction->rollback();
-			throw new CException('Error during transaction, message: ' . $e->getMessage());
-		}
 	}
 
 	/**
@@ -191,15 +161,14 @@ class HistoricalDbCommand extends CDbCommand
 	 * @param string $table
 	 * @param mixed $keys
 	 * @param mixed $values
-	 * @param object $transaction A started transaction.
 	 * @param int number of updated rows
 	 */
-	public function createHistoricalUpdate($table, $keys, $values, $transaction) {
+	public function createHistoricalUpdate($table, $keys, $values) {
 		if ($this->skipHistoricalCommand) {
 			return;
 		}
 		$db = $this->getConnection();
-		$this->logHistoricalUpdate($table, $keys, $values, $transaction);
+		$this->logHistoricalUpdate($table, $keys, $values);
 	}
 
 	/**
@@ -233,41 +202,35 @@ class HistoricalDbCommand extends CDbCommand
 			return $this->execute();
 		}
 		$db = $this->getConnection();
-		$transaction = $db->beginTransaction();
-		try {
-			$changedRows = $this->getChangedRowsForHistorical($table, $keys, $values);
-			if (count($changedRows) == 0) { // insert
-				$ret = $this->execute();
-				$this->logHistoricalInsert($db, $table, $transaction);
-			} else if (count($changedRows) == 1) { // duplicate key, update
-				$tbl = $db->getSchema()->getTable($table);
-				if ($tbl === null) {
-					throw new CDbException(
-						Yii::t('yii','The table "{table}" for active record class "{class}" cannot be found in the database.', array(
-								'{class}'=>get_class($model),
-								'{table}'=>$table,
-						))
-					);
-				}
-				$ret = $this->execute();
-				if (!isset($changedRows[0][$tbl->primaryKey])) {
-					throw new CDbException('Could not find pk for insert on historical update, table: ' . $table . ', primaryKey: ' . $tbl->primaryKey . ', values: ' . print_r($changedRows,true));
-				}
-				$changedRows = $this->getChangedRowsForHistorical($table, $tbl->primaryKey, $changedRows[0][$tbl->primaryKey]);
-				$this->logHistoricalUpdateRows($table, $changedRows, $transaction);
-			} else {
-				throw new CException(
-					'INSERT ON DUPLICATE KEY UPDATE had more than one result.
-					Table: ' . $table . ',
-					Keys: ' . print_r($keys,true) . ',
-					Values: ' . print_r($values,true) . ',
-					Results: ' . print_r($changedRows,true));
+		$changedRows = $this->getChangedRowsForHistorical($table, $keys, $values);
+		if (count($changedRows) == 0) { // insert
+			$ret = $this->execute();
+			$this->logHistoricalInsert($db, $table);
+		} else if (count($changedRows) == 1) { // duplicate key, update
+			$tbl = $db->getSchema()->getTable($table);
+			if ($tbl === null) {
+				throw new CDbException(
+					Yii::t('yii','The table "{table}" for active record class "{class}" cannot be found in the database.', array(
+							'{class}'=>get_class($model),
+							'{table}'=>$table,
+					))
+				);
 			}
-			return $ret;
-		} catch (Exception $e) {
-			$transaction->rollback();
-			throw new CException('Error during transaction, message: ' . $e->getMessage());
+			$ret = $this->execute();
+			if (!isset($changedRows[0][$tbl->primaryKey])) {
+				throw new CDbException('Could not find pk for insert on historical update, table: ' . $table . ', primaryKey: ' . $tbl->primaryKey . ', values: ' . print_r($changedRows,true));
+			}
+			$changedRows = $this->getChangedRowsForHistorical($table, $tbl->primaryKey, $changedRows[0][$tbl->primaryKey]);
+			$this->logHistoricalUpdateRows($table, $changedRows);
+		} else {
+			throw new CException(
+				'INSERT ON DUPLICATE KEY UPDATE had more than one result.
+				Table: ' . $table . ',
+				Keys: ' . print_r($keys,true) . ',
+				Values: ' . print_r($values,true) . ',
+				Results: ' . print_r($changedRows,true));
 		}
+		return $ret;
 	}
 
 	/**
@@ -276,9 +239,8 @@ class HistoricalDbCommand extends CDbCommand
 	 *
 	 * @param CDbConnection $db The connection object used to insert the record originally.
 	 * @param string $table The name of the table where the insert was performed
-	 * @param CDbTransaction $transaction The started transaction
 	 */
-	private function logHistoricalInsert($db, $table, $transaction) {
+	private function logHistoricalInsert($db, $table) {
 		$tbl = $db->getSchema()->getTable($table);
 		if ($tbl === null) {
 			throw new CDbException(
@@ -288,34 +250,31 @@ class HistoricalDbCommand extends CDbCommand
 				))
 			);
 		}
-		$this->logHistoricalCommand($table, $tbl->primaryKey, $db->getLastInsertId(), 'INSERT', $transaction);
+		$this->logHistoricalCommand($table, $tbl->primaryKey, $db->getLastInsertId(), 'INSERT');
 	}
 
-	private function logHistoricalUpdate($table, $keys, $values, $transaction) {
-		$this->logHistoricalCommand($table, $keys, $values, 'UPDATE', $transaction);
+	private function logHistoricalUpdate($table, $keys, $values) {
+		$this->logHistoricalCommand($table, $keys, $values, 'UPDATE');
 	}
 
 	private function logHistoricalDelete($table, $keys, $values) {
 		$this->logHistoricalCommand($table, $keys, $values, 'DELETE');
 	}
 
-	private function logHistoricalCommand($table, $keys, $values, $action, $transaction=null) {
+	private function logHistoricalCommand($table, $keys, $values, $action) {
 		$changedRows = $this->getChangedRowsForHistorical($table, $keys, $values);
-		$this->logHistoricalRows($table, $action, $changedRows, $transaction);
+		$this->logHistoricalRows($table, $action, $changedRows);
 	}
 
-	private function logHistoricalUpdateRows($table, $changedRows, $transaction) {
-		$this->logHistoricalRows($table, 'UPDATE', $changedRows, $transaction);
+	private function logHistoricalUpdateRows($table, $changedRows) {
+		$this->logHistoricalRows($table, 'UPDATE', $changedRows);
 	}
 
 	private function logHistoricalDeleteRows($table, $changedRows) {
 		$this->logHistoricalRows($table, 'DELETE', $changedRows);
 	}
 
-	private function logHistoricalRows($table, $action, $changedRows, $transaction=null) {
-		if ($transaction instanceof CDbTransaction) {
-			$transaction->commit();
-		}
+	private function logHistoricalRows($table, $action, $changedRows) {
 		foreach ($changedRows as $changedRow) {
 			$this->insertHistorical($table, $changedRow, $action);
 		}

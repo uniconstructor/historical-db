@@ -10,7 +10,7 @@
  * @author    GTCode
  * @link      http://www.GTCode.com/
  * @package   historical-db
- * @version   0.01a
+ * @version   0.01b
  * @category  ext*
  *
  * Derived from: http://www.yiiframework.com/wiki/38/how-to-use-nested-db-transactions-mysql-5-postgresql/

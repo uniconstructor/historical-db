@@ -10,7 +10,7 @@
  * @author    GTCode
  * @link      http://www.GTCode.com/
  * @package   historical-db
- * @version   0.01a
+ * @version   0.01b
  * @category  ext*
  * 
  */
