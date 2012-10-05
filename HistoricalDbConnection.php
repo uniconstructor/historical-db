@@ -33,7 +33,7 @@ class HistoricalDbConnection extends CDbConnection
 	}
 	
 	public function cleanseColumnName($column) {
-		return preg_replace("/[^a-zA-Z0-9_-]/", "", $col);  // TODO: Make robust
+		return preg_replace("/[^a-zA-Z0-9_-]/", "", $column);  // TODO: Make robust
 	}
 	
 	public function cleanseColumnNames(&$columns) {
