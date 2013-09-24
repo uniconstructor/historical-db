@@ -38,7 +38,7 @@ class HistoricalDbConnection extends CDbConnection
 	
 	public function cleanseColumnNames(&$columns) {
 		foreach ($columns as $key=>$column) {
-			$columns[$key] = $this->cleanseColumnName($column);
+			$columns[$key] = '`' . $this->cleanseColumnName($column) . '`';
 		}
 	}
 	

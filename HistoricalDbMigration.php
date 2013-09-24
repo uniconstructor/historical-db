@@ -201,6 +201,12 @@ class HistoricalDbMigration extends CDbMigration
 		$historicalTable = $this->getHistoricalTableName($table);
 		if ($historicalTable) {
 			$this->setDbToHistorical();
+			$type = strtolower($type);
+			if (stripos($type, 'timestamp') !== false) {
+				$type = 'TIMESTAMP NULL';
+			} else if (stripos($type, 'datetime') !== false) {
+				$type = 'DATETIME NULL';
+			}
 			parent::alterColumn($historicalTable, $column, $type);
 			$this->setDbToOriginal();
 		}
